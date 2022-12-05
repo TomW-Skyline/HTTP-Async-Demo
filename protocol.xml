@@ -1,0 +1,289 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<!--
+
+****************************************************************************
+*  Copyright (c) 2022,  Skyline Communications NV  All Rights Reserved.    *
+****************************************************************************
+
+By using this driver, you expressly agree with the usage terms and
+conditions set out below.
+This driver and all related materials are protected by copyrights and
+other intellectual property rights that exclusively belong
+to Skyline Communications.
+
+A user license granted for this driver is strictly for personal use only.
+This driver may not be used in any way by anyone without the prior
+written consent of Skyline Communications. Any sublicensing of this
+driver is forbidden.
+
+Any modifications to this driver by the user are only allowed for
+personal use and within the intended purpose of the driver,
+and will remain the sole responsibility of the user.
+Skyline Communications will not be responsible for any damages or
+malfunctions whatsoever of the driver resulting from a modification
+or adaptation by the user.
+
+The content of this driver is confidential information.
+The user hereby agrees to keep this confidential information strictly
+secret and confidential and not to disclose or reveal it, in whole
+or in part, directly or indirectly to any person, entity, organization
+or administration without the prior written consent of
+Skyline Communications.
+
+Any inquiries can be addressed to:
+
+	Skyline Communications NV
+	Ambachtenstraat 33
+	B-8870 Izegem
+	Belgium
+	Tel.	: +32 51 31 35 69
+	Fax.	: +32 51 31 01 29
+	E-mail	: info@skyline.be
+	Web		: www.skyline.be
+	Contact	: Ben Vandenberghe
+
+-->
+
+<Protocol xmlns="http://www.skyline.be/protocol">
+	<Name>HTTP Async Demo</Name>
+	<Description>HTTP Async Demo DataMiner connector</Description>
+	<Version>1.0.0.1</Version>
+	<IntegrationID>DMS-DRV-XXXX</IntegrationID>
+	<Provider>Skyline Communications</Provider>
+	<Vendor></Vendor>
+	<VendorOID>1.3.6.1.4.1.8813.2.XX</VendorOID>
+	<DeviceOID></DeviceOID>
+	<ElementType>Monitoring Platform</ElementType>
+	<Type relativeTimers="true">http</Type>
+	<Display defaultPage="General" pageOrder="General"/>
+	<SNMP includepages="true">auto</SNMP>
+
+	<Compliancies>
+		<CassandraReady>true</CassandraReady>
+	</Compliancies>
+
+	<Params>
+		<Param id="2">
+			<Name>AfterStartup</Name>
+			<Description>After Startup</Description>
+			<Type>dummy</Type>
+		</Param>
+
+		<Param id="10">
+			<Name>trigger1Min</Name>
+			<Description>Trigger 1 Min</Description>
+			<Type>read</Type>
+			<Interprete>
+				<RawType>other</RawType>
+				<Type>string</Type>
+				<LengthType>next param</LengthType>
+			</Interprete>
+		</Param>
+
+		<Param id="500" trending="false">
+			<Name>httpAfterGroup</Name>
+			<Description>HTTP After Group</Description>
+			<Type>read</Type>
+			<Interprete>
+				<RawType>other</RawType>
+				<Type>string</Type>
+				<LengthType>next param</LengthType>
+			</Interprete>
+		</Param>
+		<Param id="501" trending="false">
+			<Name>httpStatusCode</Name>
+			<Description>HTTP Status Code</Description>
+			<Type>read</Type>
+			<Interprete>
+				<RawType>other</RawType>
+				<Type>string</Type>
+				<LengthType>next param</LengthType>
+			</Interprete>
+		</Param>
+
+		<Param id="510" trending="false">
+			<Name>httpRequestUri</Name>
+			<Description>HTTP Request  URI</Description>
+			<Type>read</Type>
+			<Interprete>
+				<RawType>other</RawType>
+				<Type>string</Type>
+				<LengthType>next param</LengthType>
+			</Interprete>
+		</Param>
+		<Param id="520" trending="false">
+			<Name>httpResponseData</Name>
+			<Description>HTTP Response Data</Description>
+			<Type>read</Type>
+			<Interprete>
+				<RawType>other</RawType>
+				<Type>string</Type>
+				<LengthType>next param</LengthType>
+			</Interprete>
+		</Param>
+
+
+	</Params>
+
+	<QActions>
+		<QAction id="1" name="Precompiled Code" encoding="csharp" options="precompile" />
+		<QAction id="2" name="After Startup" encoding="csharp" triggers="2" />
+
+		<QAction id="500" name="Http Processing" encoding="csharp" triggers="10;500" />
+
+	</QActions>
+
+	<HTTP>
+		<Session id="500" name="GET Data" loginMethod="credentials">
+			<Connection id="1">
+				<Request verb="GET" pid="510">
+				</Request>
+				<Response statusCode="501">
+					<Content pid="520" />
+				</Response>
+			</Connection>
+		</Session>
+
+	</HTTP>
+
+	<Groups>
+		<Group id="2">
+			<Name>After Startup</Name>
+			<Description>After Startup</Description>
+			<Type>poll action</Type>
+			<Content>
+				<Action>2</Action>
+			</Content>
+		</Group>
+
+		<Group id="10">
+			<Name>Trigger 1 Minute</Name>
+			<Type>poll action</Type>
+			<Content>
+				<Action>10</Action>
+			</Content>
+		</Group>
+
+		<Group id="500">
+			<Name>GET HTTP Data</Name>
+			<Type>poll</Type>
+			<Content>
+				<Session>500</Session>
+			</Content>
+		</Group>
+	</Groups>
+
+	<Triggers>
+		<Trigger id="1">
+			<Name>After Startup</Name>
+			<On>protocol</On>
+			<Time>after startup</Time>
+			<Type>action</Type>
+			<Content>
+				<Id>1</Id>
+			</Content>
+		</Trigger>
+
+		<Trigger id="510">
+			<Name>GET HTTP Data</Name>
+			<On id="510">parameter</On>
+			<Time>change</Time>
+			<Type>action</Type>
+			<Content>
+				<Id>510</Id>
+			</Content>
+		</Trigger>
+
+		<Trigger id="500">
+			<Name>GET HTTP After Group</Name>
+			<On id="500">group</On>
+			<Time>after</Time>
+			<Type>action</Type>
+			<Content>
+				<Id>500</Id>
+			</Content>
+		</Trigger>
+	</Triggers>
+
+	<Actions>
+		<Action id="1">
+			<Name>After Startup Group</Name>
+			<On id="2">group</On>
+			<Type>execute next</Type>
+		</Action>
+		<Action id="2">
+			<Name>After Startup QAction</Name>
+			<On id="2">parameter</On>
+			<Type>run actions</Type>
+		</Action>
+
+		<Action id="10">
+			<Name>Trigger 1 Minute</Name>
+			<On id="10">parameter</On>
+			<Type>run actions</Type>
+		</Action>
+
+		<Action id="500">
+			<Name>GET HTTP After Group</Name>
+			<On id="500">parameter</On>
+			<Type>run actions</Type>
+		</Action>
+		<Action id="510">
+			<Name>GET HTTP Data</Name>
+			<On id="500">group</On>
+			<Type>execute</Type>
+		</Action>
+	</Actions>
+
+	<Timers>
+		<Timer id="1">
+			<Name>Medium Timer (1m)</Name>
+			<Time initial="true" dataDisplay="30000">60000</Time>
+			<Interval>75</Interval>
+			<Content>
+				<Group>10</Group>
+			</Content>
+		</Timer>
+	</Timers>
+
+	<PortSettings name="HTTP Connection">
+		<BusAddress>
+			<DefaultValue>byPassProxy</DefaultValue>
+		</BusAddress>
+		<IPport>
+			<DefaultValue>443</DefaultValue>
+		</IPport>
+		<TimeoutTime>
+			<DefaultValue>60000</DefaultValue>
+		</TimeoutTime>
+	</PortSettings>
+
+	<VersionHistory>
+		<Branches>
+			<Branch id="1">
+				<Comment>Main Branch</Comment>
+				<SystemVersions>
+					<SystemVersion id="0">
+						<MajorVersions>
+							<MajorVersion id="0">
+								<MinorVersions>
+									<MinorVersion id="1">
+										<Date>2022-mm-dd</Date>
+										<Provider>
+											<Author></Author>
+											<Company>Skyline Communications</Company>
+										</Provider>
+										<Changes>
+											<NewFeature>Initial version</NewFeature>
+										</Changes>
+									</MinorVersion>
+								</MinorVersions>
+							</MajorVersion>
+						</MajorVersions>
+					</SystemVersion>
+				</SystemVersions>
+			</Branch>
+		</Branches>
+	</VersionHistory>
+
+</Protocol>

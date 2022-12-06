@@ -26,7 +26,7 @@ public class QAction
 			switch (trigger)
 			{
 				case Parameter.trigger1min:
-					_ = GetData(protocol);
+					Task.Run(() => GetData(protocol));
 					break;
 				case Parameter.httpaftergroup:
 					ProcessResponse(protocol);
@@ -38,6 +38,34 @@ public class QAction
 		catch (Exception ex)
 		{
 			protocol.Log("QA" + protocol.QActionID + "|" + protocol.GetTriggerParameter() + "|Run|Exception thrown:" + Environment.NewLine + ex, LogType.Error, LogLevel.NoLogging);
+		}
+	}
+
+	private async Task GetData(SLProtocolExt protocol)
+	{
+		try
+		{
+			var urls = new[]
+			{
+				"https://www.skyline.be",
+				"https://www.google.com",
+				"https://www.microsoft.com",
+			};
+
+			var responses = new List<HttpResponse>();
+
+			foreach (var url in urls)
+			{
+				var response = await _httpClient.Get(protocol, url);
+
+				responses.Add(response);
+			}
+
+			UpdateParameters(protocol, responses);
+		}
+		catch (Exception ex)
+		{
+			protocol.Log("QA" + protocol.QActionID + "|GetData|Run|Exception thrown:" + Environment.NewLine + ex, LogType.Error, LogLevel.NoLogging);
 		}
 	}
 
@@ -53,27 +81,6 @@ public class QAction
 		var response = Convert.ToString(values[1]);
 
 		_httpClient.RegisterResponse(protocol, resultCode, response);
-	}
-
-	private async Task GetData(SLProtocolExt protocol)
-	{
-		var urls = new[]
-		{
-			"https://www.skyline.be",
-			"https://www.google.com",
-			"https://www.microsoft.com",
-		};
-
-		var responses = new List<HttpResponse>();
-
-		foreach (var url in urls)
-		{
-			var response = await _httpClient.Get(protocol, url);
-
-			responses.Add(response);
-		}
-
-		UpdateParameters(protocol, responses);
 	}
 
 	private void UpdateParameters(SLProtocolExt protocol, ICollection<HttpResponse> responses)

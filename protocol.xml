@@ -55,7 +55,7 @@ Any inquiries can be addressed to:
 	<DeviceOID></DeviceOID>
 	<ElementType>Monitoring Platform</ElementType>
 	<Type relativeTimers="true">http</Type>
-	<Display defaultPage="General" pageOrder="General"/>
+	<Display defaultPage="General" pageOrder="General" wideColumnPages=""/>
 	<SNMP includepages="true">auto</SNMP>
 
 	<Compliancies>
@@ -68,7 +68,7 @@ Any inquiries can be addressed to:
 			<Description>After Startup</Description>
 			<Type>dummy</Type>
 		</Param>
-
+		
 		<Param id="10">
 			<Name>trigger1Min</Name>
 			<Description>Trigger 1 Min</Description>
@@ -79,7 +79,7 @@ Any inquiries can be addressed to:
 				<LengthType>next param</LengthType>
 			</Interprete>
 		</Param>
-
+		
 		<Param id="500" trending="false">
 			<Name>httpAfterGroup</Name>
 			<Description>HTTP After Group</Description>
@@ -100,10 +100,20 @@ Any inquiries can be addressed to:
 				<LengthType>next param</LengthType>
 			</Interprete>
 		</Param>
-
+		
 		<Param id="510" trending="false">
 			<Name>httpRequestUri</Name>
-			<Description>HTTP Request  URI</Description>
+			<Description>HTTP Request URI</Description>
+			<Type>read</Type>
+			<Interprete>
+				<RawType>other</RawType>
+				<Type>string</Type>
+				<LengthType>next param</LengthType>
+			</Interprete>
+		</Param>
+		<Param id="511" trending="false">
+			<Name>httpRequestData</Name>
+			<Description>HTTP Request Data</Description>
 			<Type>read</Type>
 			<Interprete>
 				<RawType>other</RawType>
@@ -121,8 +131,7 @@ Any inquiries can be addressed to:
 				<LengthType>next param</LengthType>
 			</Interprete>
 		</Param>
-
-
+		
 	</Params>
 
 	<QActions>
@@ -134,9 +143,52 @@ Any inquiries can be addressed to:
 	</QActions>
 
 	<HTTP>
-		<Session id="500" name="GET Data" loginMethod="credentials">
+		<Session id="500" name="GET Data">
 			<Connection id="1">
 				<Request verb="GET" pid="510">
+					<Headers>
+						<Header key="Authorization" pid="10" />
+					</Headers>
+				</Request>
+				<Response statusCode="501">
+					<Content pid="520" />
+				</Response>
+			</Connection>
+		</Session>
+		<Session id="501" name="POST Data">
+			<Connection id="1">
+				<Request verb="POST" pid="510">
+					<Headers>
+						<Header key="Authorization" pid="10" />
+						<Header key="Content-Type">application/json</Header>
+					</Headers>
+					<Data pid="511" />
+				</Request>
+				<Response statusCode="501">
+					<Content pid="520" />
+				</Response>
+			</Connection>
+		</Session>
+		<Session id="502" name="PUT Data">
+			<Connection id="1">
+				<Request verb="PUT" pid="510">
+					<Headers>
+						<Header key="Authorization" pid="10" />
+						<Header key="Content-Type">application/json</Header>
+					</Headers>
+					<Data pid="511" />
+				</Request>
+				<Response statusCode="501">
+					<Content pid="520" />
+				</Response>
+			</Connection>
+		</Session>
+		<Session id="503" name="DELETE Data">
+			<Connection id="1">
+				<Request verb="DELETE" pid="510">
+					<Headers>
+						<Header key="Authorization" pid="10" />
+					</Headers>
 				</Request>
 				<Response statusCode="501">
 					<Content pid="520" />
@@ -171,6 +223,28 @@ Any inquiries can be addressed to:
 				<Session>500</Session>
 			</Content>
 		</Group>
+		<Group id="501">
+			<Name>POST HTTP Data</Name>
+			<Type>poll</Type>
+			<Content>
+				<Session>501</Session>
+			</Content>
+		</Group>
+		<Group id="502">
+			<Name>PUT HTTP Data</Name>
+			<Type>poll</Type>
+			<Content>
+				<Session>502</Session>
+			</Content>
+		</Group>
+		<Group id="503">
+			<Name>DELETE HTTP Data</Name>
+			<Type>poll</Type>
+			<Content>
+				<Session>503</Session>
+			</Content>
+		</Group>
+	
 	</Groups>
 
 	<Triggers>
@@ -184,18 +258,8 @@ Any inquiries can be addressed to:
 			</Content>
 		</Trigger>
 
-		<Trigger id="510">
-			<Name>GET HTTP Data</Name>
-			<On id="510">parameter</On>
-			<Time>change</Time>
-			<Type>action</Type>
-			<Content>
-				<Id>510</Id>
-			</Content>
-		</Trigger>
-
 		<Trigger id="500">
-			<Name>GET HTTP After Group</Name>
+			<Name>HTTP After Group GET</Name>
 			<On id="500">group</On>
 			<Time>after</Time>
 			<Type>action</Type>
@@ -203,6 +267,63 @@ Any inquiries can be addressed to:
 				<Id>500</Id>
 			</Content>
 		</Trigger>
+		<Trigger id="501">
+			<Name>HTTP After Group POST</Name>
+			<On id="501">group</On>
+			<Time>after</Time>
+			<Type>action</Type>
+			<Content>
+				<Id>500</Id>
+			</Content>
+		</Trigger>
+		<Trigger id="502">
+			<Name>HTTP After Group PUT</Name>
+			<On id="502">group</On>
+			<Time>after</Time>
+			<Type>action</Type>
+			<Content>
+				<Id>500</Id>
+			</Content>
+		</Trigger>
+		<Trigger id="503">
+			<Name>HTTP After Group DELETE</Name>
+			<On id="503">group</On>
+			<Time>after</Time>
+			<Type>action</Type>
+			<Content>
+				<Id>500</Id>
+			</Content>
+		</Trigger>
+
+		<Trigger id="510">
+			<Name>GET HTTP Data</Name>
+			<Type>action</Type>
+			<Content>
+				<Id>510</Id>
+			</Content>
+		</Trigger>
+		<Trigger id="511">
+			<Name>POST HTTP Data</Name>
+			<Type>action</Type>
+			<Content>
+				<Id>511</Id>
+			</Content>
+		</Trigger>
+		<Trigger id="512">
+			<Name>PUT HTTP Data</Name>
+			<Type>action</Type>
+			<Content>
+				<Id>512</Id>
+			</Content>
+		</Trigger>
+		<Trigger id="513">
+			<Name>DELETE HTTP Data</Name>
+			<Type>action</Type>
+			<Content>
+				<Id>513</Id>
+			</Content>
+		</Trigger>
+		
 	</Triggers>
 
 	<Actions>
@@ -224,13 +345,29 @@ Any inquiries can be addressed to:
 		</Action>
 
 		<Action id="500">
-			<Name>GET HTTP After Group</Name>
+			<Name>HTTP After Group</Name>
 			<On id="500">parameter</On>
 			<Type>run actions</Type>
 		</Action>
+		
 		<Action id="510">
 			<Name>GET HTTP Data</Name>
 			<On id="500">group</On>
+			<Type>execute</Type>
+		</Action>
+		<Action id="511">
+			<Name>POST HTTP Data</Name>
+			<On id="501">group</On>
+			<Type>execute</Type>
+		</Action>
+		<Action id="512">
+			<Name>PUT HTTP Data</Name>
+			<On id="502">group</On>
+			<Type>execute</Type>
+		</Action>
+		<Action id="513">
+			<Name>DELETE HTTP Data</Name>
+			<On id="503">group</On>
 			<Type>execute</Type>
 		</Action>
 	</Actions>

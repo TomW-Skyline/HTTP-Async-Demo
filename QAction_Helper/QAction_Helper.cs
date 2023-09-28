@@ -28,6 +28,11 @@ public static class Parameter
 	public const int httprequesturi_510 = 510;
 	/// <summary>PID: 510 | Type: read</summary>
 	public const int httprequesturi = 510;
+	/// <summary>PID: 511 | Type: read</summary>
+	[EditorBrowsable(EditorBrowsableState.Never)]
+	public const int httprequestdata_511 = 511;
+	/// <summary>PID: 511 | Type: read</summary>
+	public const int httprequestdata = 511;
 	/// <summary>PID: 520 | Type: read</summary>
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	public const int httpresponsedata_520 = 520;
@@ -56,6 +61,8 @@ public interface SLProtocolExt : SLProtocol
 	object Httpstatuscode { get; set; }
 	object Httprequesturi_510 { get; set; }
 	object Httprequesturi { get; set; }
+	object Httprequestdata_511 { get; set; }
+	object Httprequestdata { get; set; }
 	object Httpresponsedata_520 { get; set; }
 	object Httpresponsedata { get; set; }
 	WriteParameters Write { get; set; }
@@ -84,6 +91,11 @@ public class ConcreteSLProtocolExt : ConcreteSLProtocol, SLProtocolExt
 	public System.Object Httprequesturi_510 {get { return GetParameter(510); }set { SetParameter(510, value); }}
 	/// <summary>PID: 510  | Type: read</summary>
 	public System.Object Httprequesturi {get { return GetParameter(510); }set { SetParameter(510, value); }}
+	/// <summary>PID: 511  | Type: read</summary>
+	[EditorBrowsable(EditorBrowsableState.Never)]
+	public System.Object Httprequestdata_511 {get { return GetParameter(511); }set { SetParameter(511, value); }}
+	/// <summary>PID: 511  | Type: read</summary>
+	public System.Object Httprequestdata {get { return GetParameter(511); }set { SetParameter(511, value); }}
 	/// <summary>PID: 520  | Type: read</summary>
 	[EditorBrowsable(EditorBrowsableState.Never)]
 	public System.Object Httpresponsedata_520 {get { return GetParameter(520); }set { SetParameter(520, value); }}

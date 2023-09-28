@@ -4,15 +4,13 @@ namespace QAction_1.Http
 	using System.Runtime.CompilerServices;
 	using System.Threading.Tasks;
 
-	using Skyline.DataMiner.Scripting;
-
-	public struct HttpRequest
+	public class HttpRequest
 	{
 		private readonly TaskCompletionSource<HttpResponse> _tcs;
 
-		public HttpRequest(string url)
+		protected HttpRequest(string url)
 		{
-			Url = url;
+			Url = url ?? throw new ArgumentNullException(nameof(url));
 
 			_tcs = new TaskCompletionSource<HttpResponse>();
 		}
@@ -26,14 +24,48 @@ namespace QAction_1.Http
 			return Task.GetAwaiter();
 		}
 
-		internal void SetResponse(SLProtocolExt protocol, HttpResponse response)
+		internal void SetResponse(HttpResponse response)
 		{
 			_tcs.SetResult(response);
 		}
 
-		internal void SetException(SLProtocolExt protocol, Exception exception)
+		internal void SetException(Exception exception)
 		{
 			_tcs.SetException(exception);
+		}
+	}
+
+	public class HttpGetRequest : HttpRequest
+	{
+		public HttpGetRequest(string url) : base(url)
+		{
+		}
+	}
+
+	public class HttpPostRequest : HttpRequest
+	{
+		public HttpPostRequest(string url, string data) : base(url)
+		{
+			Data = data ?? throw new ArgumentNullException(nameof(data));
+		}
+
+		public string Data { get; }
+	}
+
+	public class HttpPutRequest : HttpRequest
+	{
+		public HttpPutRequest(string url, string data) : base(url)
+		{
+			Data = data ?? throw new ArgumentNullException(nameof(data));
+		}
+
+		public string Data { get; }
+	}
+
+	public class HttpDeleteRequest : HttpRequest
+	{
+		public HttpDeleteRequest(string url) : base(url)
+		{
 		}
 	}
 }

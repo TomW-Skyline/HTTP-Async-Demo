@@ -4,6 +4,8 @@ using System.Threading.Tasks;
 
 using QAction_1.Http;
 
+using QAction_500;
+
 using Skyline.DataMiner.Scripting;
 
 /// <summary>
@@ -11,7 +13,7 @@ using Skyline.DataMiner.Scripting;
 /// </summary>
 public class QAction
 {
-	private readonly HttpClient _httpClient = new HttpClient();
+	private readonly HttpClient _httpClient = new HttpClient("", new HttpActions());
 
 	/// <summary>
 	/// The QAction entry point.

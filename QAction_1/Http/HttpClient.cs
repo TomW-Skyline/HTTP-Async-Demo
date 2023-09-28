@@ -1,61 +1,154 @@
 namespace QAction_1.Http
 {
 	using System;
-	using System.Collections.Concurrent;
-	using System.IO;
+	using System.Collections.Generic;
+
+	using Newtonsoft.Json;
 
 	using Skyline.DataMiner.Scripting;
 
 	public class HttpClient
 	{
-		private readonly ConcurrentQueue<HttpRequest> _queue = new ConcurrentQueue<HttpRequest>();
+		private readonly string _uriBase;
+		private readonly IHttpActions _actions;
+
+		private readonly Queue<HttpRequest> _queue = new Queue<HttpRequest>();
 		private bool _requestOngoing;
 
-		public HttpRequest Get(SLProtocolExt protocol, string url)
+		public HttpClient(string uriBase, IHttpActions actions)
 		{
-			var request = new HttpRequest(url);
-			_queue.Enqueue(request);
+			_uriBase = uriBase ?? throw new ArgumentNullException(nameof(uriBase));
+			_actions = actions ?? throw new ArgumentNullException(nameof(actions));
+		}
 
-			if (!_requestOngoing)
-			{
-				SendNextRequest(protocol);
-			}
+		public HttpGetRequest Get(SLProtocolExt protocol, string url)
+		{
+			if (url == null)
+				throw new ArgumentNullException(nameof(url));
+
+			var request = new HttpGetRequest(url);
+			NewRequest(protocol, request);
+
+			return request;
+		}
+
+		public HttpPostRequest Post(SLProtocolExt protocol, string url, string data)
+		{
+			if (url == null)
+				throw new ArgumentNullException(nameof(url));
+			if (data == null)
+				throw new ArgumentNullException(nameof(data));
+
+			var request = new HttpPostRequest(url, data);
+			NewRequest(protocol, request);
+
+			return request;
+		}
+
+		public HttpPostRequest PostJson<T>(SLProtocolExt protocol, string url, T value)
+		{
+			string data = JsonConvert.SerializeObject(value);
+			return Post(protocol, url, data);
+		}
+
+		public HttpPutRequest Put(SLProtocolExt protocol, string url, string data)
+		{
+			if (url == null)
+				throw new ArgumentNullException(nameof(url));
+			if (data == null)
+				throw new ArgumentNullException(nameof(data));
+
+			var request = new HttpPutRequest(url, data);
+			NewRequest(protocol, request);
+
+			return request;
+		}
+
+		public HttpPutRequest PutJson<T>(SLProtocolExt protocol, string url, T value)
+		{
+			string data = JsonConvert.SerializeObject(value);
+			return Put(protocol, url, data);
+		}
+
+		public HttpDeleteRequest Delete(SLProtocolExt protocol, string url)
+		{
+			if (url == null)
+				throw new ArgumentNullException(nameof(url));
+
+			var request = new HttpDeleteRequest(url);
+			NewRequest(protocol, request);
 
 			return request;
 		}
 
 		public void RegisterResponse(SLProtocolExt protocol, string resultCode, string response)
 		{
-			if (_queue.TryDequeue(out var lastRequest))
+			lock (_queue)
 			{
-				if (resultCode.StartsWith("HTTP/1.1 200"))
+				try
 				{
-					lastRequest.SetResponse(protocol, new HttpResponse(lastRequest, resultCode, response));
+					var request = _queue.Dequeue();
+					request.SetResponse(new HttpResponse(protocol, request, resultCode, response));
 				}
-				else
+				finally
 				{
-					lastRequest.SetException(protocol, new InvalidDataException("HTTP Status code: " + resultCode));
+					if (_queue.Count > 0)
+					{
+						SendNextRequest(protocol);
+					}
+					else
+					{
+						_requestOngoing = false;
+					}
 				}
-
-				_requestOngoing = false;
 			}
-			else
+		}
+
+		private void NewRequest(SLProtocolExt protocol, HttpRequest request)
+		{
+			if (request == null)
+				throw new ArgumentNullException(nameof(request));
+
+			lock (_queue)
 			{
-				throw new InvalidOperationException("No ongoing request");
-			}
+				_queue.Enqueue(request);
 
-			SendNextRequest(protocol);
+				if (!_requestOngoing)
+				{
+					_requestOngoing = true;
+					SendNextRequest(protocol);
+				}
+			}
 		}
 
 		private void SendNextRequest(SLProtocolExt protocol)
 		{
-			if (!_queue.TryPeek(out var request))
+			var request = _queue.Peek();
+
+			var url = $"{_uriBase}{request.Url}";
+
+			if (url.StartsWith("/"))
 			{
-				return;
+				url = url.Substring(1);
 			}
 
-			protocol.Httprequesturi = request.Url;
-			_requestOngoing = true;
+			switch (request)
+			{
+				case HttpGetRequest getRequest:
+					_actions.Get(protocol, url, getRequest);
+					break;
+				case HttpPostRequest postRequest:
+					_actions.Post(protocol, url, postRequest);
+					break;
+				case HttpPutRequest putRequest:
+					_actions.Put(protocol, url, putRequest);
+					break;
+				case HttpDeleteRequest deleteRequest:
+					_actions.Delete(protocol, url, deleteRequest);
+					break;
+				default:
+					throw new NotSupportedException($"Unsupported type: {request.GetType().Name}");
+			}
 		}
 	}
 }

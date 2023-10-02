@@ -4,8 +4,6 @@ using System.Threading.Tasks;
 
 using QAction_1.Http;
 
-using QAction_500;
-
 using Skyline.DataMiner.Scripting;
 
 /// <summary>
@@ -13,7 +11,7 @@ using Skyline.DataMiner.Scripting;
 /// </summary>
 public class QAction
 {
-	private readonly HttpClient _httpClient = new HttpClient("", new HttpActions());
+	private readonly HttpClient _httpClient = new HttpClient(SendRequest);
 
 	/// <summary>
 	/// The QAction entry point.
@@ -58,7 +56,8 @@ public class QAction
 
 			foreach (var url in urls)
 			{
-				var response = await _httpClient.Get(protocol, url);
+				HttpResponse response;
+				(protocol, response) = await _httpClient.Get(protocol, url);
 
 				responses.Add(response);
 			}
@@ -68,6 +67,31 @@ public class QAction
 		catch (Exception ex)
 		{
 			protocol.Log("QA" + protocol.QActionID + "|GetData|Run|Exception thrown:" + Environment.NewLine + ex, LogType.Error, LogLevel.NoLogging);
+		}
+	}
+
+	private static void SendRequest(SLProtocolExt protocol, HttpRequest request)
+	{
+		switch (request.Verb)
+		{
+			case HttpVerb.Get:
+				protocol.Httprequesturi = request.Url;
+				protocol.CheckTrigger(510);
+				break;
+			case HttpVerb.Post:
+				protocol.SetParameters(new[] { Parameter.httprequesturi, Parameter.httprequestdata }, new object[] { request.Url, request.Data });
+				protocol.CheckTrigger(511);
+				break;
+			case HttpVerb.Put:
+				protocol.SetParameters(new[] { Parameter.httprequesturi, Parameter.httprequestdata }, new object[] { request.Url, request.Data });
+				protocol.CheckTrigger(512);
+				break;
+			case HttpVerb.Delete:
+				protocol.Httprequesturi = request.Url;
+				protocol.CheckTrigger(513);
+				break;
+			default:
+				throw new NotSupportedException($"Unsupported type: {request.Verb}");
 		}
 	}
 
@@ -82,7 +106,7 @@ public class QAction
 		var resultCode = Convert.ToString(values[0]);
 		var response = Convert.ToString(values[1]);
 
-		_httpClient.RegisterResponse(protocol, resultCode, response);
+		_httpClient.RegisterResponse(protocol, new HttpResponse(resultCode, response));
 	}
 
 	private void UpdateParameters(SLProtocolExt protocol, ICollection<HttpResponse> responses)

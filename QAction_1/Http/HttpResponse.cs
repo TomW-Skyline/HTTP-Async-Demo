@@ -1,27 +1,27 @@
 namespace QAction_1.Http
 {
+	using System.Collections.Generic;
+
 	using Newtonsoft.Json;
 
 	using Skyline.DataMiner.Scripting;
 
-	public struct HttpResponse
+	public class HttpResponse
 	{
-		public HttpResponse(SLProtocolExt protocol, HttpRequest request, string resultCode, string response)
+		public HttpResponse(string resultCode, string response)
 		{
-			Protocol = protocol;
-			Request = request;
 			ResultCode = resultCode;
 			Status = HttpStatus.Parse(resultCode);
 			Response = response;
 		}
 
-		public SLProtocolExt Protocol { get; }
-
-		public HttpRequest Request { get; }
+		public HttpRequest Request { get; private set; }
 
 		public string ResultCode { get; }
 
 		public HttpStatus Status { get; }
+
+		public IDictionary<string, string> Headers { get; } = new Dictionary<string, string>();
 
 		public string Response { get; }
 
@@ -45,6 +45,11 @@ namespace QAction_1.Http
 		public T ContentAs<T>()
 		{
 			return JsonConvert.DeserializeObject<T>(GetSuccessResponse());
+		}
+
+		internal void SetRequest(HttpRequest request)
+		{
+			Request = request ?? throw new System.ArgumentNullException(nameof(request));
 		}
 	}
 }

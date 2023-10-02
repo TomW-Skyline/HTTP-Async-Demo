@@ -1,34 +1,44 @@
 namespace QAction_1.Http
 {
 	using System;
+	using System.Collections.Generic;
 	using System.Runtime.CompilerServices;
 	using System.Threading.Tasks;
 
+	using Skyline.DataMiner.Scripting;
+
 	public class HttpRequest
 	{
-		private readonly TaskCompletionSource<HttpResponse> _tcs;
+		private readonly TaskCompletionSource<(SLProtocolExt, HttpResponse)> _tcs;
 
-		protected HttpRequest(string url)
+		protected HttpRequest(HttpVerb verb, string url)
 		{
+			Verb = verb;
 			Url = url ?? throw new ArgumentNullException(nameof(url));
 
-			_tcs = new TaskCompletionSource<HttpResponse>();
+			_tcs = new TaskCompletionSource<(SLProtocolExt, HttpResponse)>();
 		}
 
-		public Task<HttpResponse> Task => _tcs.Task;
+		public Task<(SLProtocolExt, HttpResponse)> Task => _tcs.Task;
+
+		public IDictionary<string, string> Headers { get; } = new Dictionary<string, string>();
+
+		public HttpVerb Verb { get; }
 
 		public string Url { get; }
 
-		public TaskAwaiter<HttpResponse> GetAwaiter()
+		public string Data { get; set; }
+
+		public TaskAwaiter<(SLProtocolExt protocol, HttpResponse response)> GetAwaiter()
 		{
 			return Task.GetAwaiter();
 		}
 
-		internal void SetResponse(HttpResponse response)
+		internal void SetResponse(SLProtocolExt protocol, HttpResponse response)
 		{
-			_tcs.SetResult(response);
+			_tcs.SetResult((protocol, response));
 		}
-
+		 
 		internal void SetException(Exception exception)
 		{
 			_tcs.SetException(exception);
@@ -37,34 +47,30 @@ namespace QAction_1.Http
 
 	public class HttpGetRequest : HttpRequest
 	{
-		public HttpGetRequest(string url) : base(url)
+		public HttpGetRequest(string url) : base(HttpVerb.Get, url)
 		{
 		}
 	}
 
 	public class HttpPostRequest : HttpRequest
 	{
-		public HttpPostRequest(string url, string data) : base(url)
+		public HttpPostRequest(string url, string data) : base(HttpVerb.Post, url)
 		{
-			Data = data ?? throw new ArgumentNullException(nameof(data));
+			Data = data;
 		}
-
-		public string Data { get; }
 	}
 
 	public class HttpPutRequest : HttpRequest
 	{
-		public HttpPutRequest(string url, string data) : base(url)
+		public HttpPutRequest(string url, string data) : base(HttpVerb.Put, url)
 		{
-			Data = data ?? throw new ArgumentNullException(nameof(data));
+			Data = data;
 		}
-
-		public string Data { get; }
 	}
 
 	public class HttpDeleteRequest : HttpRequest
 	{
-		public HttpDeleteRequest(string url) : base(url)
+		public HttpDeleteRequest(string url) : base(HttpVerb.Delete, url)
 		{
 		}
 	}

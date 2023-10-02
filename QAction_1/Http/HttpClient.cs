@@ -9,16 +9,22 @@ namespace QAction_1.Http
 
 	public class HttpClient
 	{
-		private readonly string _uriBase;
-		private readonly IHttpActions _actions;
+		private readonly Action<SLProtocolExt, HttpRequest> _sendRequestAction;
 
 		private readonly Queue<HttpRequest> _queue = new Queue<HttpRequest>();
 		private bool _requestOngoing;
 
-		public HttpClient(string uriBase, IHttpActions actions)
+		public HttpClient(Action<SLProtocolExt, HttpRequest> sendRequestAction)
 		{
-			_uriBase = uriBase ?? throw new ArgumentNullException(nameof(uriBase));
-			_actions = actions ?? throw new ArgumentNullException(nameof(actions));
+			_sendRequestAction = sendRequestAction ?? throw new ArgumentNullException(nameof(sendRequestAction));
+		}
+
+		public void Get(SLProtocolExt protocol, HttpGetRequest request)
+		{
+			if (request == null)
+				throw new ArgumentNullException(nameof(request));
+
+			Request(protocol, request);
 		}
 
 		public HttpGetRequest Get(SLProtocolExt protocol, string url)
@@ -27,9 +33,17 @@ namespace QAction_1.Http
 				throw new ArgumentNullException(nameof(url));
 
 			var request = new HttpGetRequest(url);
-			NewRequest(protocol, request);
+			Get(protocol, request);
 
 			return request;
+		}
+
+		public void Post(SLProtocolExt protocol, HttpPostRequest request)
+		{
+			if (request == null)
+				throw new ArgumentNullException(nameof(request));
+
+			Request(protocol, request);
 		}
 
 		public HttpPostRequest Post(SLProtocolExt protocol, string url, string data)
@@ -40,7 +54,7 @@ namespace QAction_1.Http
 				throw new ArgumentNullException(nameof(data));
 
 			var request = new HttpPostRequest(url, data);
-			NewRequest(protocol, request);
+			Post(protocol, request);
 
 			return request;
 		}
@@ -51,6 +65,14 @@ namespace QAction_1.Http
 			return Post(protocol, url, data);
 		}
 
+		public void Put(SLProtocolExt protocol, HttpPutRequest request)
+		{
+			if (request == null)
+				throw new ArgumentNullException(nameof(request));
+
+			Request(protocol, request);
+		}
+
 		public HttpPutRequest Put(SLProtocolExt protocol, string url, string data)
 		{
 			if (url == null)
@@ -59,7 +81,7 @@ namespace QAction_1.Http
 				throw new ArgumentNullException(nameof(data));
 
 			var request = new HttpPutRequest(url, data);
-			NewRequest(protocol, request);
+			Put(protocol, request);
 
 			return request;
 		}
@@ -70,25 +92,58 @@ namespace QAction_1.Http
 			return Put(protocol, url, data);
 		}
 
+		public void Delete(SLProtocolExt protocol, HttpDeleteRequest request)
+		{
+			if (request == null)
+				throw new ArgumentNullException(nameof(request));
+
+			Request(protocol, request);
+		}
+
 		public HttpDeleteRequest Delete(SLProtocolExt protocol, string url)
 		{
 			if (url == null)
 				throw new ArgumentNullException(nameof(url));
 
 			var request = new HttpDeleteRequest(url);
-			NewRequest(protocol, request);
+			Delete(protocol, request);
 
 			return request;
 		}
 
-		public void RegisterResponse(SLProtocolExt protocol, string resultCode, string response)
+		public void Request(SLProtocolExt protocol, HttpRequest request)
 		{
+			if (request == null)
+			{
+				throw new ArgumentNullException(nameof(request));
+			}
+
+			lock (_queue)
+			{
+				_queue.Enqueue(request);
+
+				if (!_requestOngoing)
+				{
+					_requestOngoing = true;
+					SendNextRequest(protocol);
+				}
+			}
+		}
+
+		public void RegisterResponse(SLProtocolExt protocol, HttpResponse response)
+		{
+			if (response == null)
+			{
+				throw new ArgumentNullException(nameof(response));
+			}
+
 			lock (_queue)
 			{
 				try
 				{
 					var request = _queue.Dequeue();
-					request.SetResponse(new HttpResponse(protocol, request, resultCode, response));
+					response.SetRequest(request);
+					request.SetResponse(protocol, response);
 				}
 				finally
 				{
@@ -104,51 +159,10 @@ namespace QAction_1.Http
 			}
 		}
 
-		private void NewRequest(SLProtocolExt protocol, HttpRequest request)
-		{
-			if (request == null)
-				throw new ArgumentNullException(nameof(request));
-
-			lock (_queue)
-			{
-				_queue.Enqueue(request);
-
-				if (!_requestOngoing)
-				{
-					_requestOngoing = true;
-					SendNextRequest(protocol);
-				}
-			}
-		}
-
 		private void SendNextRequest(SLProtocolExt protocol)
 		{
 			var request = _queue.Peek();
-
-			var url = $"{_uriBase}{request.Url}";
-
-			if (url.StartsWith("/"))
-			{
-				url = url.Substring(1);
-			}
-
-			switch (request)
-			{
-				case HttpGetRequest getRequest:
-					_actions.Get(protocol, url, getRequest);
-					break;
-				case HttpPostRequest postRequest:
-					_actions.Post(protocol, url, postRequest);
-					break;
-				case HttpPutRequest putRequest:
-					_actions.Put(protocol, url, putRequest);
-					break;
-				case HttpDeleteRequest deleteRequest:
-					_actions.Delete(protocol, url, deleteRequest);
-					break;
-				default:
-					throw new NotSupportedException($"Unsupported type: {request.GetType().Name}");
-			}
+			_sendRequestAction(protocol, request);
 		}
 	}
 }
